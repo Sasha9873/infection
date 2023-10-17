@@ -38,14 +38,18 @@ bool can_infect_all_bfs(Graph* graph, std::vector<int> cur_state)
 {
 	std::queue<int> que;
 
-	std::vector<int> infected_neigbours(graph->max_vertex, 0);
-	std::vector<bool> used = {false};
+	std::vector<int> infected_neigbours(graph->max_vertex + 1, 0);
+	std::vector<bool> used(graph->max_vertex + 1, false);
 
 	for(auto vertex: cur_state)
 	{
 		que.push(vertex);
 		infected_neigbours[vertex] = 2;
+		used[vertex] = true; //to vertex do not oush in que twice
+		
 	}
+
+	
 
 	while(!que.empty())
 	{
@@ -58,12 +62,14 @@ bool can_infect_all_bfs(Graph* graph, std::vector<int> cur_state)
 			if(!used[neigbour] && infected_neigbours[neigbour] >= 2)
 			{
 				que.push(neigbour);
+				used[neigbour] = true;
 			}
 		}
 
-		used[cur_vertex] = true;
+		
 		que.pop();
 	}
+
 
 
 	for(int vertex = 1; vertex <= graph->max_vertex; ++vertex)
@@ -107,6 +113,11 @@ Graph* read_graph()
 	graph->max_vertex = max_vertex;
 
 	graph->neigbours.resize(max_vertex + 1);
+	graph->is_infected.resize(max_vertex + 1);
+
+	for(int i = 1; i <= graph->is_infected.size(); i++) {
+		graph->is_infected[i] = 0;
+	}
 
 	for(auto [first_vertex, second_vertex] : edges)
 	{
@@ -123,11 +134,15 @@ double rnd_for_method()  //returns double from 0 to 1
 
 void Graph::delete_vertex(std::vector<int>& new_state, std::vector<int>& cur_state, std::vector<int>& answer, double temp)
 {
+	std::vector<int> cur_state_saved = cur_state;
+
+	std::vector<bool> is_infected_saved = this->is_infected;
+
 	int delete_vert = rnd() % cur_state.size();
 
 	new_state.erase(new_state.begin() + delete_vert);
-
-	this->is_infected[delete_vert] = false;
+	this->is_infected[cur_state[delete_vert]] = false;
+	
 
 	bool is_corrrect = can_infect_all_bfs(this, new_state);
 	size_t new_size = new_state.size(), cur_size = cur_state.size();
@@ -137,24 +152,36 @@ void Graph::delete_vertex(std::vector<int>& new_state, std::vector<int>& cur_sta
 		cur_state = new_state;
 		if(answer.size() > cur_state.size())
 			answer = cur_state;
+	}
+	else
+	{
+		this->is_infected = is_infected_saved;
+		cur_state = cur_state_saved;
 	}
 }
 
 void Graph::add_vertex(std::vector<int>& new_state, std::vector<int>& cur_state, std::vector<int>& answer, double temp)
 {
+	std::vector<bool> is_infected_saved = this->is_infected;
+	std::vector<int> cur_state_saved = cur_state;
+
 	std::vector<int> not_infected_vertexes;
 	for(int vertex = 1; vertex <= this->max_vertex; ++vertex)
 	{
-		if(!this->is_infected[vertex])
+		if(!(this->is_infected[vertex]))
+		{
 			not_infected_vertexes.push_back(vertex);
+		}
 	}
 
 
-	int add_vert = rnd() % not_infected_vertexes.size(); // почему.....
+
+
+	int add_vert = rnd() % not_infected_vertexes.size(); 
 
 	new_state.push_back(not_infected_vertexes[add_vert]);
+	this->is_infected[not_infected_vertexes[add_vert]] = true;
 
-	this->is_infected[add_vert] = true;
 
 
 	bool is_corrrect = can_infect_all_bfs(this, new_state);
@@ -165,6 +192,11 @@ void Graph::add_vertex(std::vector<int>& new_state, std::vector<int>& cur_state,
 		cur_state = new_state;
 		if(answer.size() > cur_state.size())
 			answer = cur_state;
+	}
+	else
+	{
+		this->is_infected = is_infected_saved;
+		cur_state = cur_state_saved;
 	}
 }
 
