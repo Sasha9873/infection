@@ -1,45 +1,11 @@
-// numeration from 1
-#include <iostream>
-#include <vector>
-#include <unordered_map>
-#include <queue>
-#include <chrono>
-#include <random>
-#include <algorithm>
-#include <math.h>
+#include "infection.h"
 
-static const int N_ITERS = 1e6;
-std::mt19937 rnd(std::chrono::steady_clock::now().time_since_epoch().count());
-
-
-
-class Graph{
-public:
-	bool can_infect_all();
-	void add_edge(int first_vertex, int second_vertex);
-	std::vector<int> simulated_annealing_method();
-	void add_vertex(std::vector<int>& new_state, std::vector<int>& cur_state, std::vector<int>& answer, double temp);
-	void delete_vertex(std::vector<int>& new_state, std::vector<int>& cur_state, std::vector<int>& answer, double temp);
-
-
-	std::vector<std::vector<int>> neigbours;
-
-	std::vector<bool> is_infected = {false};
-
-	size_t n_edges = 0;
-	size_t max_vertex = 0;
-	Graph() = default;
-	~Graph() = default;
-
-
-};
-
-bool can_infect_all_bfs(Graph* graph, std::vector<int> cur_state)
+bool Graph::can_infect_all_bfs(std::vector<int> cur_state)
 {
 	std::queue<int> que;
 
-	std::vector<int> infected_neigbours(graph->max_vertex + 1, 0);
-	std::vector<bool> used(graph->max_vertex + 1, false);
+	std::vector<int> infected_neigbours(this->max_vertex + 1, 0);
+	std::vector<bool> used(this->max_vertex + 1, false);
 
 	for(auto vertex: cur_state)
 	{
@@ -55,7 +21,7 @@ bool can_infect_all_bfs(Graph* graph, std::vector<int> cur_state)
 	{
 		int cur_vertex = que.front();
 
-		for(auto neigbour: graph->neigbours[cur_vertex])
+		for(auto neigbour: this->neigbours[cur_vertex])
 		{
 			++infected_neigbours[neigbour];
 			
@@ -72,7 +38,7 @@ bool can_infect_all_bfs(Graph* graph, std::vector<int> cur_state)
 
 
 
-	for(int vertex = 1; vertex <= graph->max_vertex; ++vertex)
+	for(int vertex = 1; vertex <= this->max_vertex; ++vertex)
 	{
 		if(infected_neigbours[vertex] < 2)
 			return false;
@@ -127,7 +93,7 @@ Graph* read_graph()
 	return graph;
 }
 
-double rnd_for_method()  //returns double from 0 to 1
+static double rnd_for_method()  //returns double from 0 to 1
 {
 	return double(rand() / RAND_MAX);
 }
@@ -144,7 +110,7 @@ void Graph::delete_vertex(std::vector<int>& new_state, std::vector<int>& cur_sta
 	this->is_infected[cur_state[delete_vert]] = false;
 	
 
-	bool is_corrrect = can_infect_all_bfs(this, new_state);
+	bool is_corrrect = this->can_infect_all_bfs(new_state);
 	size_t new_size = new_state.size(), cur_size = cur_state.size();
 
 	if(is_corrrect && ((new_size < cur_size) || (rnd() < exp((new_size - cur_size) / temp))))
@@ -184,7 +150,7 @@ void Graph::add_vertex(std::vector<int>& new_state, std::vector<int>& cur_state,
 
 
 
-	bool is_corrrect = can_infect_all_bfs(this, new_state);
+	bool is_corrrect = this->can_infect_all_bfs(new_state);
 	size_t new_size = new_state.size(), cur_size = cur_state.size();
 
 	if(is_corrrect && ((new_size < cur_size) || (rnd() < exp((new_size - cur_size) / temp))))
@@ -251,20 +217,3 @@ std::vector<int> Graph::simulated_annealing_method()
 
 
 
-int main()
-{
-	Graph* graph = read_graph();
-
-
-	std::vector answer = graph->simulated_annealing_method();
-
-	std::cout << answer.size() << "\n";
-
-	for(auto vertex : answer)
-		std::cout << vertex << " ";
-
-	delete(graph);
-	graph = nullptr;
-
-	return 0;
-}
